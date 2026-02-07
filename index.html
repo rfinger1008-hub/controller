@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全功能腳本儀表板</title>
+    <style>
+        body { font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: #f0f2f5; margin: 0; padding: 20px; box-sizing: border-box; }
+        
+        /* 寬版卡片設定 */
+        .card { 
+            background: white; 
+            padding: 2rem; 
+            border-radius: 20px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08); 
+            width: 100%; 
+            max-width: 900px; /* 變寬了 */
+            text-align: center; 
+        }
+
+        /* 輸入框與選單樣式 */
+        input[type="text"], input[type="password"], input[type="email"], input[type="number"], select {
+            width: 100%; padding: 10px; margin: 5px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; outline: none; text-align: center; background: #fafafa; font-size: 14px;
+        }
+        input:focus, select:focus { border-color: #007bff; background: white; }
+        select { cursor: pointer; text-align-last: center; }
+
+        /* 按鈕樣式 */
+        button { width: 100%; padding: 15px; margin-top: 15px; border: none; border-radius: 12px; cursor: pointer; color: white; font-weight: bold; font-size: 18px; transition: 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        button:active { transform: scale(0.98); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+
+        .btn-login { background-color: #007bff; }
+        .btn-start { 
+            background: linear-gradient(135deg, #28a745 0%, #218838 100%); 
+            font-size: 20px; 
+        }
+        .btn-logout { background-color: #6c757d; font-size: 14px; padding: 10px; width: auto; margin-top: 30px; box-shadow: none; }
+
+        /* --- 網格佈局系統 (Grid) --- */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); /* 自動適應寬度，最窄260px */
+            gap: 15px;
+            margin-top: 15px;
+            text-align: left;
+        }
+
+        /* 功能模組盒子 */
+        .module-box {
+            background: #fff;
+            border: 1px solid #eee;
+            border-radius: 12px;
+            padding: 12px;
+            position: relative;
+            transition: 0.2s;
+        }
+        .module-box:hover { border-color: #b3d7ff; box-shadow: 0 5px 15px rgba(0,123,255,0.05); }
+
+        /* 模組標題列 (含 Checkbox) */
+        .module-header {
+            display: flex;
+            align-items: center;
+            border-bottom: 2px solid #f5f5f5;
+            padding-bottom: 8px;
+            margin-bottom: 8px;
+        }
+        .module-title { font-weight: bold; color: #444; font-size: 15px; flex: 1; margin-left: 8px; }
+        
+        /* Checkbox 放大 */
+        input[type="checkbox"].toggle-module {
+            width: 18px; height: 18px; cursor: pointer; accent-color: #007bff;
+        }
+
+        /* 起始模式選擇區 */
+        .start-mode-section {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border: 1px solid #bbdefb;
+        }
+        .radio-group {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 5px;
+        }
+        .radio-label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-weight: bold;
+            color: #1565c0;
+            font-size: 15px;
+            background: white;
+            padding: 8px 12px;
+            border-radius: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .radio-label input { margin-right: 6px; width: auto; }
+
+        /* 提示文字 */
+        .hint-text { font-size: 12px; color: #888; margin-top: 5px; text-align: center; }
+        .section-hint { font-size: 13px; color: #5c6bc0; margin-bottom: 5px; font-weight: bold; }
+
+        .hidden { display: none; }
+        #status { margin-top: 20px; font-size: 14px; color: #666; font-weight: 500; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2 style="margin-bottom: 5px;">🛠️ 全功能腳本控制台</h2>
+    <p id="user-display" style="font-size: 13px; color: #aaa; margin-top: 0;">請先登入</p>
+    
+    <div id="login-area">
+        <input type="email" id="email" placeholder="Email">
+        <input type="password" id="password" placeholder="密碼">
+        <button id="btnLogin" class="btn-login">登入系統</button>
+    </div>
+
+    <div id="control-area" class="hidden">
+
+        <div class="start-mode-section">
+            <div class="section-hint">🚀 腳本啟動後，優先進入哪個模式？</div>
+            <div class="radio-group">
+                <label class="radio-label"><input type="radio" name="startMode" value="LEAGUE" checked> 聯賽</label>
+                <label class="radio-label"><input type="radio" name="startMode" value="RANKING"> 排名</label>
+                <label class="radio-label"><input type="radio" name="startMode" value="ARENA"> 競技</label>
+                <label class="radio-label"><input type="radio" name="startMode" value="STAGE"> 關卡</label>
+                <label class="radio-label"><input type="radio" name="startMode" value="CLUB"> 俱樂部</label>
+            </div>
+            <div class="hint-text">(這決定第一步做什麼，後續會依照下方勾選的模式進行掛機)</div>
+        </div>
+
+        <div class="dashboard-grid">
+
+            <div class="module-box">
+                <div class="module-header">
+                    <input type="checkbox" id="run_league" class="toggle-module" checked>
+                    <span class="module-title" style="color: #d35400;">🏆 聯賽循環</span>
+                </div>
+                <label><input type="checkbox" id="league_equip" checked> 自動穿裝</label>
+                <label><input type="checkbox" id="league_potion"> 自動喝水</label>
+            </div>
+
+            <div class="module-box">
+                <div class="module-header">
+                    <input type="checkbox" id="run_ranking" class="toggle-module">
+                    <span class="module-title" style="color: #27ae60;">🥇 排名賽</span>
+                </div>
+                <label><input type="checkbox" id="ranking_equip"> 自動穿裝</label>
+                <label><input type="checkbox" id="ranking_potion" checked> 自動喝水</label>
+            </div>
+
+            <div class="module-box">
+                <div class="module-header">
+                    <input type="checkbox" id="run_arena" class="toggle-module">
+                    <span class="module-title" style="color: #2980b9;">⚔️ 競技場</span>
+                </div>
+                <input type="number" id="arena_delay" value="1000" placeholder="延遲 (ms)">
+                <div class="hint-text">點擊後的延遲時間</div>
+            </div>
+
+            <div class="module-box">
+                <div class="module-header">
+                    <input type="checkbox" id="run_stage" class="toggle-module">
+                    <span class="module-title" style="color: #8e44ad;">🏰 關卡挑戰</span>
+                </div>
+                <select id="stage_strategy">
+                    <option value="SELF">自我解決 (預設)</option>
+                    <option value="BOSS">最後大魔王</option>
+                    <option value="OVERPOWER">壓倒性投手</option>
+                    <option value="TECHNICAL">技巧派投手</option>
+                </select>
+                <div class="hint-text">選擇克制技能</div>
+            </div>
+
+            <div class="module-box">
+                <div class="module-header">
+                    <input type="checkbox" id="run_club_battle" class="toggle-module">
+                    <span class="module-title" style="color: #c0392b;">🛡️ 俱樂部戰</span>
+                </div>
+                <select id="club_battle_stars">
+                    <option value="3">⭐⭐⭐ 三星對手</option>
+                    <option value="2">⭐⭐ 二星對手</option>
+                    <option value="1">⭐ 一星對手</option>
+                </select>
+            </div>
+
+            <div class="module-box">
+                <div class="module-header">
+                    <input type="checkbox" id="run_club_challenge" class="toggle-module">
+                    <span class="module-title" style="color: #d68910;">🔥 俱樂部挑戰</span>
+                </div>
+                <select id="club_challenge_diff">
+                    <option value="EASY">Easy</option>
+                    <option value="NORMAL">Normal</option>
+                    <option value="HARD" selected>Hard</option>
+                    <option value="EXTREME">Extreme</option>
+                </select>
+            </div>
+
+        </div>
+
+        <div class="module-box" style="margin-top: 15px; background: #fffbf0; border-color: #ffe0b2;">
+            <div class="module-title" style="margin-bottom: 5px;">⏳ 腳本暫停 (分鐘)</div>
+            <input type="number" id="pauseInput" value="0" step="0.1" placeholder="輸入 0 代表不暫停">
+            <div class="hint-text">若要開始掛機請設定0，若要設定暫停時間請填入數字</div>
+        </div>
+
+        <button id="btnStart" class="btn-start">🚀 更新設定 / 開始掛機</button>
+        <div class="hint-text" style="margin-top: 10px;">
+            💡 提示：隨時可以修改設定並再次點擊按鈕，腳本會即時更新。<br>
+            若要暫停，請將時間設長，或直接關閉腳本工具。
+        </div>
+
+        <button id="btnLogout" class="btn-logout">登出帳號</button>
+    </div>
+
+    <div id="status">請先登入</div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getDatabase, ref, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+    // ✅ 你的 Firebase 設定
+    const firebaseConfig = {
+        apiKey: "AIzaSyCFn1buQn-olqvQkMh4H_imSih_-vRlHVo",
+        authDomain: "test-2a198.firebaseapp.com",
+        databaseURL: "https://test-2a198-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "test-2a198",
+        storageBucket: "test-2a198.firebasestorage.app",
+        messagingSenderId: "217248632641",
+        appId: "1:217248632641:web:187fbfd729e75967b15bc0"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+    let currentUser = null;
+
+    const statusDiv = document.getElementById('status');
+    const loginArea = document.getElementById('login-area');
+    const controlArea = document.getElementById('control-area');
+    const userDisplay = document.getElementById('user-display');
+
+    // 發送指令
+    const sendCommand = (cmd, extraData = {}) => {
+        if (!currentUser) return;
+        
+        const payload = {
+            command: cmd,
+            timestamp: Date.now(),
+            ...extraData
+        };
+
+        const updates = {};
+        updates['/users/' + currentUser.uid] = payload;
+        
+        update(ref(db), updates)
+            .then(() => {
+                let msg = `✅ 設定已更新! (優先模式: ${extraData.start_mode})`;
+                statusDiv.innerText = msg;
+                statusDiv.style.color = "green";
+            })
+            .catch(e => alert("發送失敗: " + e.message));
+    };
+
+    // 登入
+    document.getElementById('btnLogin').addEventListener('click', async () => {
+        const email = document.getElementById('email').value;
+        const pass = document.getElementById('password').value;
+        statusDiv.innerText = "⏳ 登入中...";
+        try {
+            await signInWithEmailAndPassword(auth, email, pass)
+                .catch(err => {
+                    if(err.code.includes('not-found') || err.code.includes('invalid-credential')) {
+                        return createUserWithEmailAndPassword(auth, email, pass);
+                    }
+                    throw err;
+                });
+            statusDiv.innerText = "✅ 登入成功";
+            statusDiv.style.color = "green";
+        } catch (error) {
+            statusDiv.innerText = "❌ " + error.message;
+            statusDiv.style.color = "red";
+        }
+    });
+
+    document.getElementById('btnLogout').addEventListener('click', () => signOut(auth));
+
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            currentUser = user;
+            loginArea.classList.add('hidden');
+            controlArea.classList.remove('hidden');
+            userDisplay.innerText = user.email;
+        } else {
+            currentUser = null;
+            loginArea.classList.remove('hidden');
+            controlArea.classList.add('hidden');
+            userDisplay.innerText = "請先登入";
+        }
+    });
+
+    // 👇 按下開始：打包所有資料 👇
+    document.getElementById('btnStart').addEventListener('click', () => {
+        
+        // 1. 取得優先啟動模式 (Start Mode)
+        const startMode = document.querySelector('input[name="startMode"]:checked').value;
+
+        // 2. 取得暫停時間
+        const minutes = parseFloat(document.getElementById('pauseInput').value);
+        const pauseDuration = (minutes && minutes > 0) ? Math.floor(minutes * 60 * 1000) : 0;
+
+        // 3. 打包資料 (包含所有 Checkbox 狀態與詳細設定)
+        const dataPackage = {
+            start_mode: startMode,       // 優先跑哪個
+            duration: pauseDuration,     // 暫停時間
+            
+            // --- 模組開關與設定 ---
+            
+            // 聯賽
+            run_league: document.getElementById('run_league').checked, // 是否開啟
+            league_equip: document.getElementById('league_equip').checked,
+            league_potion: document.getElementById('league_potion').checked,
+            
+            // 排名
+            run_ranking: document.getElementById('run_ranking').checked, // 是否開啟
+            ranking_equip: document.getElementById('ranking_equip').checked,
+            ranking_potion: document.getElementById('ranking_potion').checked,
+            
+            // 競技
+            run_arena: document.getElementById('run_arena').checked, // 是否開啟
+            arena_delay: parseInt(document.getElementById('arena_delay').value) || 1000,
+            
+            // 關卡挑戰 (新)
+            run_stage: document.getElementById('run_stage').checked, // 是否開啟
+            stage_strategy: document.getElementById('stage_strategy').value, // 克制技能
+            
+            // 俱樂部戰 (新)
+            run_club_battle: document.getElementById('run_club_battle').checked, // 是否開啟
+            club_battle_stars: document.getElementById('club_battle_stars').value, // 幾星對手
+            
+            // 俱樂部挑戰 (新)
+            run_club_challenge: document.getElementById('run_club_challenge').checked, // 是否開啟
+            club_challenge_diff: document.getElementById('club_challenge_diff').value // 難度
+        };
+
+        // 4. 發送 START 指令 (不再有 STOP 按鈕，用 START 更新參數)
+        sendCommand('START', dataPackage);
+    });
+
+</script>
+</body>
+</html>
